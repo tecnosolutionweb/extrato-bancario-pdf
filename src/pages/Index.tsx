@@ -6,6 +6,8 @@ import { TransactionFilters, FilterType, ViewMode } from '@/components/Transacti
 import { TransactionTable } from '@/components/TransactionTable';
 import { TransactionGroups } from '@/components/TransactionGroups';
 import { PdfUpload } from '@/components/PdfUpload';
+import { InstallPrompt } from '@/components/InstallPrompt';
+import logo from '@/assets/logo.png';
 
 const Index = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -83,21 +85,20 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <InstallPrompt />
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-4 sm:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-                <Wallet className="h-5 w-5 text-primary-foreground" />
-              </div>
+              <img src={logo} alt="Extrato Banco" className="h-10 w-10 rounded-xl" />
               <div>
-                <h1 className="text-xl font-bold text-foreground">Controle Financeiro</h1>
-                <p className="text-sm text-muted-foreground">{periodLabel}</p>
+                <h1 className="text-lg sm:text-xl font-bold text-foreground">Extrato Banco</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground">{periodLabel}</p>
               </div>
             </div>
             {transactions.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
                 <span>{periodLabel}</span>
               </div>
@@ -106,7 +107,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-6 sm:space-y-8 pb-20">
         {/* PDF Upload */}
         <section className="bg-card rounded-2xl p-6 shadow-card border border-border/50">
           <div className="flex items-center justify-between mb-4">
