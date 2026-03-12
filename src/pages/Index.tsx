@@ -6,6 +6,8 @@ import { TransactionFilters, FilterType, ViewMode } from '@/components/Transacti
 import { TransactionTable } from '@/components/TransactionTable';
 import { TransactionGroups } from '@/components/TransactionGroups';
 import { PdfUpload } from '@/components/PdfUpload';
+import { InstallPrompt } from '@/components/InstallPrompt';
+import logo from '@/assets/logo.png';
 
 const Index = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
