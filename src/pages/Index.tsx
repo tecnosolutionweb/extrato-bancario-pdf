@@ -107,7 +107,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-6 sm:space-y-8 pb-20">
         {/* PDF Upload */}
         <section className="bg-card rounded-2xl p-6 shadow-card border border-border/50">
           <div className="flex items-center justify-between mb-4">
