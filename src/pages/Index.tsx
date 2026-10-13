@@ -102,7 +102,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4 sm:py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img src={logo} alt="Extrato Banco" className="h-10 w-10 rounded-xl" />
+                <img src={logo} alt="Extrato Banco" className="h-14 w-14 rounded-xl" />
                 <div>
                   <h1 className="text-lg sm:text-xl font-bold text-foreground">Extrato Banco</h1>
                   <p className="text-xs sm:text-sm text-muted-foreground">{periodLabel}</p>
@@ -191,7 +191,7 @@ const Index = () => {
                 onClearDates={handleClearDates}
               />
               
-              <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 <span>
                   Mostrando <strong className="text-foreground">{transactionCount}</strong> transações
                 </span>

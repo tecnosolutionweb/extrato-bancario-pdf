@@ -29,59 +29,103 @@ export const TransactionTable = ({ transactions }: TransactionTableProps) => {
 
   return (
     <div className="rounded-xl border border-border/50 bg-card overflow-hidden shadow-card animate-slide-up">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50 hover:bg-muted/50">
-            <TableHead className="font-semibold text-foreground">Data</TableHead>
-            <TableHead className="font-semibold text-foreground">Descrição</TableHead>
-            <TableHead className="font-semibold text-foreground text-right">Valor</TableHead>
-            <TableHead className="font-semibold text-foreground text-center w-24">Tipo</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {transactions.map((transaction, index) => (
-            <TableRow 
-              key={transaction.id}
-              className="transition-colors hover:bg-muted/30"
-              style={{ animationDelay: `${index * 20}ms` }}
-            >
-              <TableCell className="font-medium text-muted-foreground">
-                {formatDate(transaction.date)}
-              </TableCell>
-              <TableCell className="max-w-[300px] truncate font-medium">
-                {transaction.description}
-              </TableCell>
-              <TableCell className={cn(
-                "text-right font-bold tabular-nums",
-                transaction.type === 'income' ? "text-income" : "text-expense"
+      {/* Mobile: card layout */}
+      <div className="divide-y divide-border/50 sm:hidden">
+        {transactions.map((transaction, index) => (
+          <div
+            key={transaction.id}
+            className="flex items-start justify-between gap-3 p-4"
+            style={{ animationDelay: `${index * 20}ms` }}
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-foreground break-words">{transaction.description}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{formatDate(transaction.date)}</p>
+              <div className={cn(
+                "mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+                transaction.type === 'income'
+                  ? "bg-income-muted text-income"
+                  : "bg-expense-muted text-expense"
               )}>
-                {transaction.type === 'income' ? '+ ' : '- '}
-                {formatCurrency(transaction.value)}
-              </TableCell>
-              <TableCell className="text-center">
-                <div className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-                  transaction.type === 'income' 
-                    ? "bg-income-muted text-income" 
-                    : "bg-expense-muted text-expense"
-                )}>
-                  {transaction.type === 'income' ? (
-                    <>
-                      <ArrowUpCircle className="h-3 w-3" />
-                      Entrada
-                    </>
-                  ) : (
-                    <>
-                      <ArrowDownCircle className="h-3 w-3" />
-                      Saída
-                    </>
-                  )}
-                </div>
-              </TableCell>
+                {transaction.type === 'income' ? (
+                  <>
+                    <ArrowUpCircle className="h-3 w-3" />
+                    Entrada
+                  </>
+                ) : (
+                  <>
+                    <ArrowDownCircle className="h-3 w-3" />
+                    Saída
+                  </>
+                )}
+              </div>
+            </div>
+            <p className={cn(
+              "shrink-0 font-bold tabular-nums whitespace-nowrap",
+              transaction.type === 'income' ? "text-income" : "text-expense"
+            )}>
+              {transaction.type === 'income' ? '+ ' : '- '}
+              {formatCurrency(transaction.value)}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: table layout */}
+      <div className="hidden sm:block">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="font-semibold text-foreground">Data</TableHead>
+              <TableHead className="font-semibold text-foreground">Descrição</TableHead>
+              <TableHead className="font-semibold text-foreground text-right">Valor</TableHead>
+              <TableHead className="font-semibold text-foreground text-center w-24">Tipo</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {transactions.map((transaction, index) => (
+              <TableRow 
+                key={transaction.id}
+                className="transition-colors hover:bg-muted/30"
+                style={{ animationDelay: `${index * 20}ms` }}
+              >
+                <TableCell className="font-medium text-muted-foreground">
+                  {formatDate(transaction.date)}
+                </TableCell>
+                <TableCell className="max-w-[300px] truncate font-medium">
+                  {transaction.description}
+                </TableCell>
+                <TableCell className={cn(
+                  "text-right font-bold tabular-nums",
+                  transaction.type === 'income' ? "text-income" : "text-expense"
+                )}>
+                  {transaction.type === 'income' ? '+ ' : '- '}
+                  {formatCurrency(transaction.value)}
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+                    transaction.type === 'income' 
+                      ? "bg-income-muted text-income" 
+                      : "bg-expense-muted text-expense"
+                  )}>
+                    {transaction.type === 'income' ? (
+                      <>
+                        <ArrowUpCircle className="h-3 w-3" />
+                        Entrada
+                      </>
+                    ) : (
+                      <>
+                        <ArrowDownCircle className="h-3 w-3" />
+                        Saída
+                      </>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };
