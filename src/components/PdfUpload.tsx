@@ -1,7 +1,10 @@
 import { useState, useRef } from 'react';
-import { Upload, FileText, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { parsePDFToTransactions } from '@/lib/pdfParser';
+import { Input } from '@/components/ui/input';
+import { parsePDFToTransactions, isPasswordError } from '@/lib/pdfParser';
+import { ocrFileToLines, isImageFile, OcrProgress } from '@/lib/ocr';
+import { extractTransactionsFromLines } from '@/lib/transactionExtractor';
 import type { Transaction } from '@/data/transactions';
 import { cn } from '@/lib/utils';
 
@@ -9,38 +12,84 @@ interface PdfUploadProps {
   onTransactionsLoaded: (transactions: Transaction[]) => void;
 }
 
+const isPdfFile = (file: File): boolean =>
+  file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+
 export const PdfUpload = ({ onTransactionsLoaded }: PdfUploadProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [password, setPassword] = useState('');
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState<OcrProgress | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = async (file: File) => {
-    if (file.type !== 'application/pdf') {
-      setError('Por favor, selecione um arquivo PDF.');
+  const handleFile = async (file: File, filePassword?: string) => {
+    const isPdf = isPdfFile(file);
+    const isImage = isImageFile(file);
+
+    if (!isPdf && !isImage) {
+      setError('Selecione um arquivo PDF ou uma imagem (PNG, JPG, WEBP...).');
       return;
     }
 
     setIsLoading(true);
     setError(null);
     setSuccess(null);
+    setProgress(null);
 
     try {
-      const transactions = await parsePDFToTransactions(file);
-      
+      let transactions: Transaction[] = [];
+      let usedOcr = false;
+
+      if (isPdf) {
+        const { transactions: textTransactions, hasText } = await parsePDFToTransactions(file, filePassword);
+        transactions = textTransactions;
+
+        if (transactions.length === 0 && !hasText) {
+          setProgress({ page: 0, totalPages: 0, progress: 0, label: 'Preparando OCR...' });
+          const lines = await ocrFileToLines(file, filePassword, setProgress);
+          transactions = extractTransactionsFromLines(lines);
+          usedOcr = true;
+        } else if (transactions.length === 0) {
+          setError('Não foi possível encontrar transações neste PDF. Verifique se é um extrato bancário válido.');
+          return;
+        }
+      } else {
+        setProgress({ page: 0, totalPages: 0, progress: 0, label: 'Preparando OCR...' });
+        const lines = await ocrFileToLines(file, undefined, setProgress);
+        transactions = extractTransactionsFromLines(lines);
+        usedOcr = true;
+      }
+
       if (transactions.length === 0) {
-        setError('Não foi possível encontrar transações neste PDF. Verifique se é um extrato bancário válido.');
+        setError('Não foi possível encontrar transações neste arquivo. Verifique se é um extrato bancário válido.');
         return;
       }
 
+      setNeedsPassword(false);
+      setPassword('');
+      setPendingFile(null);
       onTransactionsLoaded(transactions);
-      setSuccess(`${transactions.length} transações importadas de "${file.name}"`);
+      setSuccess(
+        `${transactions.length} transações importadas de "${file.name}"${
+          usedOcr ? ' (via OCR — confira os valores)' : ''
+        }`,
+      );
     } catch (err) {
-      console.error('Erro ao processar PDF:', err);
-      setError('Erro ao processar o arquivo PDF. Tente novamente.');
+      if (isPasswordError(err)) {
+        setNeedsPassword(true);
+        setPendingFile(file);
+        setError(filePassword ? 'Senha incorreta. Tente novamente.' : null);
+      } else {
+        console.error('Erro ao processar arquivo:', err);
+        setError('Erro ao processar o arquivo. Tente novamente.');
+      }
     } finally {
       setIsLoading(false);
+      setProgress(null);
     }
   };
 
@@ -72,7 +121,7 @@ export const PdfUpload = ({ onTransactionsLoaded }: PdfUploadProps) => {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf"
+        accept=".pdf,image/*"
         onChange={handleFileChange}
         className="hidden"
       />
@@ -93,7 +142,12 @@ export const PdfUpload = ({ onTransactionsLoaded }: PdfUploadProps) => {
         {isLoading ? (
           <>
             <Loader2 className="h-10 w-10 text-primary animate-spin" />
-            <p className="text-sm font-medium text-muted-foreground">Processando extrato...</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              {progress?.label ?? 'Processando extrato...'}
+            </p>
+            {progress && progress.progress > 0 && (
+              <p className="text-xs text-muted-foreground">{Math.round(progress.progress * 100)}%</p>
+            )}
           </>
         ) : (
           <>
@@ -102,7 +156,7 @@ export const PdfUpload = ({ onTransactionsLoaded }: PdfUploadProps) => {
             </div>
             <div className="text-center">
               <p className="text-sm font-semibold text-foreground">
-                Arraste seu extrato PDF aqui
+                Arraste seu extrato (PDF ou imagem) aqui
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 ou clique para selecionar um arquivo
@@ -110,11 +164,38 @@ export const PdfUpload = ({ onTransactionsLoaded }: PdfUploadProps) => {
             </div>
             <Button variant="outline" size="sm" className="rounded-full mt-1">
               <FileText className="h-4 w-4 mr-2" />
-              Selecionar PDF
+              Selecionar arquivo
             </Button>
           </>
         )}
       </div>
+
+      {needsPassword && (
+        <form
+          className="rounded-2xl border border-border/50 p-4 space-y-3 animate-fade-in"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (pendingFile && password) handleFile(pendingFile, password);
+          }}
+        >
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Lock className="h-4 w-4 shrink-0" />
+            <p>Este PDF é protegido por senha. Digite a senha para desbloqueá-lo.</p>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Senha do PDF"
+              autoFocus
+            />
+            <Button type="submit" disabled={isLoading || !password}>
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Desbloquear'}
+            </Button>
+          </div>
+        </form>
+      )}
 
       {error && (
         <div className="flex items-center gap-2 text-sm text-expense bg-expense-muted rounded-xl p-3 animate-fade-in">

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { TrendingUp, TrendingDown, Wallet, Calendar, Receipt, Upload } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { TrendingUp, TrendingDown, Wallet, Receipt, Upload, PieChart } from 'lucide-react';
 import { Transaction, formatCurrency, groupTransactionsByPayee } from '@/data/transactions';
 import { SummaryCard } from '@/components/SummaryCard';
 import { TransactionFilters, FilterType, ViewMode } from '@/components/TransactionFilters';
@@ -7,24 +8,32 @@ import { TransactionTable } from '@/components/TransactionTable';
 import { TransactionGroups } from '@/components/TransactionGroups';
 import { PdfUpload } from '@/components/PdfUpload';
 import { InstallPrompt } from '@/components/InstallPrompt';
+import { useTransactions } from '@/contexts/TransactionsContext';
 import logo from '@/assets/logo.png';
 
 const Index = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { transactions, addTransactions, clearTransactions } = useTransactions();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const handleTransactionsLoaded = (newTransactions: Transaction[]) => {
-    setTransactions(prev => {
-      // Merge with existing, re-index IDs
-      const merged = [...prev, ...newTransactions];
-      return merged.map((t, i) => ({ ...t, id: String(i + 1) }));
-    });
+    addTransactions(newTransactions);
   };
 
   const handleClearTransactions = () => {
-    setTransactions([]);
+    clearTransactions();
+    setSearchTerm('');
+    setFilterType('all');
+    setStartDate('');
+    setEndDate('');
+  };
+
+  const handleClearDates = () => {
+    setStartDate('');
+    setEndDate('');
   };
 
   // Calculate totals
@@ -49,9 +58,11 @@ const Index = () => {
       const matchesSearch = searchTerm === '' || 
         transaction.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = filterType === 'all' || transaction.type === filterType;
-      return matchesSearch && matchesType;
+      const matchesStartDate = !startDate || transaction.date >= startDate;
+      const matchesEndDate = !endDate || transaction.date <= endDate;
+      return matchesSearch && matchesType && matchesStartDate && matchesEndDate;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, searchTerm, filterType]);
+  }, [transactions, searchTerm, filterType, startDate, endDate]);
 
   // Get filtered totals
   const filteredTotals = useMemo(() => {
@@ -89,21 +100,22 @@ const Index = () => {
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 sm:py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Extrato Banco" className="h-10 w-10 rounded-xl" />
-              <div>
-                <h1 className="text-lg sm:text-xl font-bold text-foreground">Extrato Banco</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground">{periodLabel}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img src={logo} alt="Extrato Banco" className="h-10 w-10 rounded-xl" />
+                <div>
+                  <h1 className="text-lg sm:text-xl font-bold text-foreground">Extrato Banco</h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{periodLabel}</p>
+                </div>
               </div>
+              <Link
+                to="/graficos"
+                className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                <PieChart className="h-4 w-4 text-primary" />
+                <span className="hidden sm:inline">Gráficos</span>
+              </Link>
             </div>
-            {transactions.length > 0 && (
-              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>{periodLabel}</span>
-              </div>
-            )}
-          </div>
         </div>
       </header>
 
@@ -172,6 +184,11 @@ const Index = () => {
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
                 groups={filteredGroups}
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                onClearDates={handleClearDates}
               />
               
               <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
@@ -186,6 +203,15 @@ const Index = () => {
                 {searchTerm && (
                   <span>
                     • Filtrado por: <strong className="text-foreground">"{searchTerm}"</strong>
+                  </span>
+                )}
+                {(startDate || endDate) && (
+                  <span>
+                    • Período:{' '}
+                    <strong className="text-foreground">
+                      {startDate ? new Date(startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'início'} até{' '}
+                      {endDate ? new Date(endDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'agora'}
+                    </strong>
                   </span>
                 )}
               </div>

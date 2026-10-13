@@ -1,4 +1,4 @@
-import { Search, Filter, ArrowUpCircle, ArrowDownCircle, LayoutList, Users } from 'lucide-react';
+import { Search, Filter, ArrowUpCircle, ArrowDownCircle, LayoutList, Users, Calendar, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -17,6 +17,11 @@ interface TransactionFiltersProps {
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
   groups?: TransactionGroup[];
+  startDate: string;
+  endDate: string;
+  onStartDateChange: (value: string) => void;
+  onEndDateChange: (value: string) => void;
+  onClearDates: () => void;
 }
 
 export const TransactionFilters = ({
@@ -27,6 +32,11 @@ export const TransactionFilters = ({
   viewMode,
   onViewModeChange,
   groups = [],
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+  onClearDates,
 }: TransactionFiltersProps) => {
   return (
     <div className="space-y-4 animate-fade-in">
@@ -75,6 +85,44 @@ export const TransactionFilters = ({
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-11 h-12 bg-card border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all"
         />
+      </div>
+
+      {/* Date Range Filter */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Calendar className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium text-muted-foreground mr-2">Período:</span>
+
+        <Input
+          type="date"
+          value={startDate}
+          max={endDate || undefined}
+          onChange={(e) => onStartDateChange(e.target.value)}
+          aria-label="Data inicial"
+          className="h-10 w-auto bg-card border-border/50 rounded-xl"
+        />
+
+        <span className="text-sm text-muted-foreground">até</span>
+
+        <Input
+          type="date"
+          value={endDate}
+          min={startDate || undefined}
+          onChange={(e) => onEndDateChange(e.target.value)}
+          aria-label="Data final"
+          className="h-10 w-auto bg-card border-border/50 rounded-xl"
+        />
+
+        {(startDate || endDate) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClearDates}
+            className="rounded-full text-muted-foreground hover:text-expense"
+          >
+            <X className="h-4 w-4 mr-1" />
+            Limpar datas
+          </Button>
+        )}
       </div>
 
       {/* Filter Buttons */}
