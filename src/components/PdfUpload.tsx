@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { parsePDFToTransactions, isPasswordError } from '@/lib/pdfParser';
 import { ocrFileToLines, isImageFile, OcrProgress } from '@/lib/ocr';
+import { parseSpreadsheetToTransactions, isSpreadsheetFile } from '@/lib/spreadsheetParser';
 import { extractTransactionsFromLines } from '@/lib/transactionExtractor';
 import type { Transaction } from '@/data/transactions';
 import { cn } from '@/lib/utils';
@@ -29,9 +30,10 @@ export const PdfUpload = ({ onTransactionsLoaded }: PdfUploadProps) => {
   const handleFile = async (file: File, filePassword?: string) => {
     const isPdf = isPdfFile(file);
     const isImage = isImageFile(file);
+    const isSpreadsheet = isSpreadsheetFile(file);
 
-    if (!isPdf && !isImage) {
-      setError('Selecione um arquivo PDF ou uma imagem (PNG, JPG, WEBP...).');
+    if (!isPdf && !isImage && !isSpreadsheet) {
+      setError('Selecione um arquivo PDF, uma imagem (PNG, JPG, WEBP...) ou uma planilha (XLSX, XLS, CSV).');
       return;
     }
 
@@ -44,7 +46,9 @@ export const PdfUpload = ({ onTransactionsLoaded }: PdfUploadProps) => {
       let transactions: Transaction[] = [];
       let usedOcr = false;
 
-      if (isPdf) {
+      if (isSpreadsheet) {
+        transactions = await parseSpreadsheetToTransactions(file);
+      } else if (isPdf) {
         const { transactions: textTransactions, hasText } = await parsePDFToTransactions(file, filePassword);
         transactions = textTransactions;
 
@@ -54,7 +58,7 @@ export const PdfUpload = ({ onTransactionsLoaded }: PdfUploadProps) => {
           transactions = extractTransactionsFromLines(lines);
           usedOcr = true;
         } else if (transactions.length === 0) {
-          setError('Não foi possível encontrar transações neste PDF. Verifique se é um extrato bancário válido.');
+          setError('Não foi possível encontrar transações neste arquivo. Verifique se é um extrato bancário válido.');
           return;
         }
       } else {
@@ -121,7 +125,7 @@ export const PdfUpload = ({ onTransactionsLoaded }: PdfUploadProps) => {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,image/*"
+        accept=".pdf,.xlsx,.xls,.csv,.tsv,image/*"
         onChange={handleFileChange}
         className="hidden"
       />
@@ -156,7 +160,7 @@ export const PdfUpload = ({ onTransactionsLoaded }: PdfUploadProps) => {
             </div>
             <div className="text-center">
               <p className="text-sm font-semibold text-foreground">
-                Arraste seu extrato (PDF ou imagem) aqui
+                Arraste seu extrato (PDF, imagem ou planilha) aqui
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 ou clique para selecionar um arquivo
