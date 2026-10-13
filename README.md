@@ -1,73 +1,106 @@
-# Welcome to your Lovable project
+# Extrato Banco PDF
 
-## Project info
+Aplicação web que lê extratos bancários em **PDF ou imagem** direto no navegador, extrai as transações e apresenta tudo de forma organizada — com filtros, agrupamento por beneficiário, exportação e gráficos para acompanhar entradas e gastos.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Todo o processamento acontece **localmente no navegador**: nenhum arquivo é enviado para servidores.
 
-## How can I edit this code?
+## Principais recursos
 
-There are several ways of editing your application.
+- **Importação de extratos** por arrastar-e-soltar ou seleção de arquivo (`.pdf`, `.png`, `.jpg`, `.webp`, etc.).
+- **Leitura de PDF com texto** e **OCR automático** para PDFs digitalizados ou imagens (via Tesseract.js).
+- **Suporte a PDFs protegidos por senha** — solicita a senha e desbloqueia o arquivo.
+- **Resumo do período**: total de entradas, total de saídas, saldo e número de transações.
+- **Filtros**: busca por descrição, tipo (entrada/saída) e intervalo de datas.
+- **Duas visões**: lista de transações ou agrupamento por beneficiário.
+- **Página de gráficos** (`/graficos`):
+  - Proporção de entradas x gastos (donut);
+  - Entradas e gastos por mês (barras);
+  - Evolução do saldo acumulado (linha);
+  - Ranking dos maiores gastos.
+- **Exportação** dos dados agrupados para **PDF** e **Excel** (`.xlsx`).
+- **PWA** — pode ser instalado como app no celular ou desktop.
 
-**Use Lovable**
+## Tecnologias
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- [Vite](https://vitejs.dev/) + [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/) e componentes no estilo [shadcn/ui](https://ui.shadcn.com/)
+- [Recharts](https://recharts.org/) para os gráficos
+- [pdf.js](https://mozilla.github.io/pdf.js/) para leitura de PDF
+- [Tesseract.js](https://github.com/naptha/tesseract.js) para OCR
+- [jsPDF](https://github.com/parallax/jsPDF) + [jsPDF-AutoTable](https://github.com/simonbengtsson/jsPDF-AutoTable) e [SheetJS](https://sheetjs.com/) para exportação
+- [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/) para testes
 
-Changes made via Lovable will be committed automatically to this repo.
+## Pré-requisitos
 
-**Use your preferred IDE**
+- Node.js 20+ e npm (ou [Bun](https://bun.sh/), pelo `bun.lock` presente no repositório).
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Rodando localmente
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Instalar dependências
+npm install
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Iniciar o servidor de desenvolvimento (http://localhost:8080)
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Outros scripts
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sh
+npm run build      # build de produção (gera a pasta dist/)
+npm run preview    # pré-visualiza o build de produção
+npm run lint       # análise de lint (ESLint)
+npm test           # executa os testes (Vitest)
+npm run test:watch # testes em modo watch
+```
 
-**Use GitHub Codespaces**
+## Deploy com Docker
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+O projeto inclui `Dockerfile` (build multi-stage com Nginx) e `nginx.conf`.
 
-## What technologies are used for this project?
+```sh
+# Build da imagem
+docker build -t extrato-bancario-pdf .
 
-This project is built with:
+# Executar o container (aplicação disponível em http://localhost:3000)
+docker run -p 3000:3000 extrato-bancario-pdf
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Estrutura do projeto
 
-## How can I deploy this project?
+```
+src/
+├── components/          # Componentes de UI da aplicação
+│   ├── ui/              # Componentes base (shadcn/ui)
+│   ├── PdfUpload.tsx    # Upload e processamento de PDF/imagem
+│   ├── TransactionFilters.tsx
+│   ├── TransactionTable.tsx
+│   ├── TransactionGroups.tsx
+│   ├── SummaryCard.tsx
+│   └── ExportButtons.tsx
+├── contexts/            # Estado compartilhado (transações)
+├── data/                # Tipos e utilitários de transações
+├── hooks/               # Hooks reutilizáveis
+├── lib/                 # Parser de PDF, OCR e extração de transações
+│   ├── pdfParser.ts
+│   ├── pdfLines.ts
+│   ├── pdfjs.ts
+│   ├── ocr.ts
+│   ├── transactionExtractor.ts
+│   └── exportUtils.ts
+├── pages/
+│   ├── Index.tsx        # Importação, resumo e lista de transações
+│   └── Charts.tsx       # Página de gráficos (/graficos)
+└── main.tsx
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Como funciona
 
-## Can I connect a custom domain to my Lovable project?
+1. **Entrada do arquivo** — o usuário arrasta ou seleciona um PDF/imagem em `PdfUpload`.
+2. **Extração de texto** — para PDFs com texto, o `pdfParser` lê o conteúdo diretamente. Se o PDF não tiver texto (digitalizado) ou for uma imagem, o `ocr.ts` aplica OCR para obter as linhas.
+3. **Interpretação das transações** — `transactionExtractor` identifica data, descrição, valor e tipo (entrada/saída) a partir das linhas.
+4. **Visualização** — as transações ficam disponíveis por meio do `TransactionsContext` e são exibidas nas telas de lista e de gráficos.
 
-Yes, you can!
+## Privacidade
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Os arquivos são lidos e processados integralmente no navegador. Nada é enviado para servidores externos, e os dados deixam de existir ao recarregar a página.
