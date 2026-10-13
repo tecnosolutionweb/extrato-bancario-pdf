@@ -16,6 +16,17 @@ interface TransactionGroupsProps {
 export const TransactionGroups = ({ transactions }: TransactionGroupsProps) => {
   const groups = useMemo(() => groupTransactionsByPayee(transactions), [transactions]);
 
+  const totals = useMemo(() => {
+    const totalIncome = groups.reduce((sum, g) => sum + g.totalIncome, 0);
+    const totalExpense = groups.reduce((sum, g) => sum + g.totalExpense, 0);
+    return {
+      totalIncome,
+      totalExpense,
+      netTotal: totalIncome - totalExpense,
+      transactionCount: groups.reduce((sum, g) => sum + g.transactionCount, 0),
+    };
+  }, [groups]);
+
   if (groups.length === 0) {
     return (
       <div className="bg-card rounded-2xl p-8 text-center shadow-card border border-border/50">
@@ -102,6 +113,34 @@ export const TransactionGroups = ({ transactions }: TransactionGroupsProps) => {
           </AccordionItem>
         ))}
       </Accordion>
+
+      <div className="border-t border-border/50 bg-muted/50 px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="font-semibold text-foreground">Total Geral</p>
+            <p className="text-xs text-muted-foreground">
+              {groups.length} {groups.length === 1 ? 'beneficiário' : 'beneficiários'} • {totals.transactionCount}{' '}
+              {totals.transactionCount === 1 ? 'transação' : 'transações'}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            <div className="flex items-center gap-1 text-income">
+              <TrendingUp className="h-4 w-4" />
+              <span className="text-sm font-medium">+{formatCurrency(totals.totalIncome)}</span>
+            </div>
+            <div className="flex items-center gap-1 text-expense">
+              <TrendingDown className="h-4 w-4" />
+              <span className="text-sm font-medium">-{formatCurrency(totals.totalExpense)}</span>
+            </div>
+            <div className={cn(
+              "font-bold text-lg min-w-[120px] text-right",
+              totals.netTotal >= 0 ? "text-income" : "text-expense"
+            )}>
+              {totals.netTotal >= 0 ? '+' : '-'}{formatCurrency(Math.abs(totals.netTotal))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
