@@ -41,8 +41,8 @@ export const TransactionGroups = ({ transactions }: TransactionGroupsProps) => {
       <Accordion type="multiple" className="w-full">
         {groups.map((group, index) => (
           <AccordionItem key={group.name} value={group.name} className="border-b border-border/50 last:border-b-0">
-            <AccordionTrigger className="px-4 py-4 hover:bg-muted/50 hover:no-underline sm:px-6">
-              <div className="flex items-center justify-between gap-3 w-full pr-2 sm:pr-4">
+            <AccordionTrigger className="min-w-0 px-4 py-4 hover:bg-muted/50 hover:no-underline sm:px-6">
+              <div className="flex min-w-0 flex-1 items-center justify-between gap-3 pr-2 sm:pr-4">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={cn(
                     "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold",
