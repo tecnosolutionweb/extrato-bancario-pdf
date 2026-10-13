@@ -46,4 +46,17 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Emit .mjs assets (pdf.js worker) with a .js extension so any static
+        // server serves them with a JavaScript MIME type. Browsers refuse to
+        // run module workers served as application/octet-stream.
+        assetFileNames: (assetInfo) =>
+          assetInfo.name?.endsWith(".mjs")
+            ? "assets/[name]-[hash].js"
+            : "assets/[name]-[hash][extname]",
+      },
+    },
+  },
 });
